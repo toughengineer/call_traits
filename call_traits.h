@@ -5,7 +5,7 @@ Usage:
 
   int foo() { return 42; }
 
-  using fooReturnType = call_traits<decltype(foo)>::return_type;
+  using FooReturnType = call_traits<decltype(foo)>::return_type;
 
   struct Bar
   {
@@ -32,35 +32,19 @@ Usage:
   using LambdaArg0Type = call_traits<decltype(lambda)>::arg_type<0>;
   using LambdaArg1Type = call_traits<decltype(lambda)>::arg_type<1>;
 */
+
+#include <tuple>
+
 template<typename F>
 struct call_traits;
-
-namespace detail
-{
-  template<size_t index, typename... Types>
-  struct TypeIndexer;
-
-  template<typename Type0, typename... Types>
-  struct TypeIndexer<0, Type0, Types...>
-  {
-    using type = Type0;
-  };
-
-  template<size_t index, typename Type0, typename... Types>
-  struct TypeIndexer<index, Type0, Types...>
-  {
-    static_assert(index < sizeof...(Types) + 1, "index is out of range");
-    using type = typename TypeIndexer<index - 1, Types...>::type;
-  };
-}  // namespace detail
 
 template<typename R, typename... Args>
 struct call_traits<R(Args...)>
 {
   using return_type = R;
-  static const size_t arg_count = sizeof...(Args);
-  template<size_t i>
-  using arg_type = typename detail::TypeIndexer<i, Args...>::type;
+  static constexpr size_t arg_count = sizeof...(Args);
+  template<size_t Index>
+  using arg_type = std::tuple_element_t<Index, std::tuple<Args...>>;
 };
 
 template<typename R, typename... Args>
